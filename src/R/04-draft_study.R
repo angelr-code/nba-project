@@ -1,30 +1,29 @@
 library(dplyr)
 library(tidyr)
 library(xgboost)
-library(caret)  
+library(caret)
 
-set.seed(123)  
+set.seed(123)
 
-# PREPROCESAMIENTO
+# PREPROCESSING
 
+# Create a binary success variable
+ncaa_exp$nba_success <- ifelse(ncaa_exp$SEASON_EXP >= 5, 1, 0) # more than 5 years in the league
 
-
-# variable binaria de éxito
-ncaa_exp$exito_nba <- ifelse(ncaa_exp$SEASON_EXP >= 5, 1, 0) # más de 5 años en la liga
-
+# Filter the data
 ncaa_exp <- ncaa_exp %>%
   filter(as.numeric(substr(Season, 1, 4)) + 1 <= 2017)
 
-# Variables a usar
-vars_usar <- c(
-  "exito_nba", "PTS.1", "AST", "ORB", "DRB", "STL", "BLK", "TOV", 
-  "FG.", "X3P.", "FT.", "TS.", "eFG.", "Pos", "Round", 
+# Variables to use
+vars_to_use <- c(
+  "nba_success", "PTS.1", "AST", "ORB", "DRB", "STL", "BLK", "TOV",
+  "FG.", "X3P.", "FT.", "TS.", "eFG.", "Pos", "Round",
   "Class"
 )
 
 draft_model <- ncaa_exp %>%
-  select(all_of(vars_usar)) %>%
-  filter(!is.na(exito_nba)) %>%
+  select(all_of(vars_to_use)) %>%
+  filter(!is.na(nba_success)) %>%
   mutate(
     PTS.1 = as.numeric(as.character(PTS.1)),
     AST = as.numeric(as.character(AST)),
@@ -41,17 +40,12 @@ draft_model <- ncaa_exp %>%
     Round = factor(Round),
     Pos = factor(Pos),
     Class = factor(Class),
-    exito_nba = factor(exito_nba, levels = c(0, 1), labels = c("No", "Si"))
+    nba_success = factor(nba_success, levels = c(0, 1), labels = c("No", "Yes"))
   )
 
+# MODEL
 
-
-# MODELO
-
-
-
-# validación cruzada
-
+# Cross-validation
 train_index <- sample(seq_len(nrow(draft_model)), size = 0.8 * nrow(draft_model))
 train_data <- draft_model[train_index, ]
 test_data <- draft_model[-train_index, ]
@@ -76,7 +70,7 @@ grid <- expand.grid(
 )
 
 xgb_model <- train(
-  exito_nba ~ .,
+  nba_success ~ .,
   data = train_data,
   method = "xgbTree",
   metric = "ROC",
@@ -87,22 +81,19 @@ xgb_model <- train(
 
 print(xgb_model$bestTune)
 
+# Define the model with the xgboost package directly, as caret might not fully support missing data
+# Use the best parameters obtained from tuning
 
-#Defino el modelo con el paquete xgboost porque caret no soporta datos faltantes
-# usamos los mejores parámetros obtenidos
+X_train <- data.matrix(train_data %>% select(-nba_success))
+y_train <- ifelse(train_data$nba_success == "Yes", 1, 0)
 
-
-X_train <- data.matrix(train_data %>% select(-exito_nba))
-y_train <- ifelse(train_data$exito_nba == "Si", 1, 0)
-
-X_test <- data.matrix(test_data %>% select(-exito_nba))
-y_test <- test_data$exito_nba
+X_test <- data.matrix(test_data %>% select(-nba_success))
+y_test <- test_data$nba_success
 
 dtrain <- xgb.DMatrix(data = X_train, label = y_train, missing = NA)
-dtest  <- xgb.DMatrix(data = X_test, missing = NA)
+dtest <- xgb.DMatrix(data = X_test, missing = NA)
 
-
-modelo_optimo <- xgboost(
+optimal_model <- xgboost(
   data = dtrain,
   objective = "binary:logistic",
   nrounds = 50,
@@ -116,24 +107,23 @@ modelo_optimo <- xgboost(
   verbose = 0
 )
 
+# Predict on the test set
+pred_probs <- predict(optimal_model, newdata = dtest)
+pred_class <- as.factor(ifelse(pred_probs >= 0.5, "Yes", "No"))
 
-# Predecir en test
-pred_probs <- predict(modelo_optimo, newdata = X_test)
-pred_class <- as.factor(ifelse(pred_probs >= 0.5, "Si", "No"))
-
-conf_mat <- confusionMatrix(pred_class, y_test, positive = "Si")
+conf_mat <- confusionMatrix(pred_class, y_test, positive = "Yes")
 print(conf_mat)
 
-
-importance <- xgb.importance(model = modelo_optimo)
+# Feature importance
+importance <- xgb.importance(model = optimal_model)
 print(importance)
 
 ggplot(importance, aes(x = reorder(Feature, Gain), y = Gain)) +
-  geom_col(fill = "#1D428A") +  # Azul NBA
+  geom_col(fill = "#1D428A") +  # NBA Blue
   coord_flip() +
-  ggtitle("Importancia de las variables (XGBoost)") +
+  ggtitle("Variable Importance (XGBoost)") +
   xlab("Variable") +
-  ylab("Ganancia (Gain)") +
+  ylab("Gain") +
   theme_minimal(base_size = 14) +
   theme(
     plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
@@ -141,6 +131,7 @@ ggplot(importance, aes(x = reorder(Feature, Gain), y = Gain)) +
     axis.title = element_text(size = 18)
   )
 
+# Calculate and print metrics
 recall <- conf_mat$byClass["Sensitivity"]
 precision <- conf_mat$byClass["Precision"]
 f1 <- 2 * (precision * recall) / (precision + recall)
