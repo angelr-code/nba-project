@@ -1,11 +1,11 @@
 # Data cleaning and preprocessing for statistical analysis and modeling
 
 # Load raw data from CSV files
-common_data <- read.csv("data/raw_data/common_player_info.csv")
-player_stats <- read.csv("data/raw_data/nba_player_stats_by_season.csv")
-salaries <- read.csv("data/raw_data/salarios_nba_ajustados.csv")
-all_star <- read.csv("data/raw_data/all_stars.csv")
-ncaa <- read.csv("data/raw_data/ncaa.csv")
+common_data <- read.csv("data/raw/common_player_info.csv")
+player_stats <- read.csv("data/raw/nba_player_stats_by_season.csv")
+salaries <- read.csv("data/raw/salarios_nba_ajustados.csv")
+all_star <- read.csv("data/raw/all_stars.csv")
+ncaa <- read.csv("data/raw/ncaa.csv")
 
 ##### COMMON CLEANING FOR ALL TASKS #####
 
@@ -26,7 +26,7 @@ rm(columns_to_delete, rank_cols, wnba_cols, cols_to_remove)
 player_stats <- player_stats[, c(names(player_stats)[1:2], "SEASON", names(player_stats)[3:(ncol(player_stats) - 1)])] 
 
 # Save the cleaned data
-save(player_stats, file = "data/processed_data/player_stats.Rdata")
+save(player_stats, file = "data/processed/player_stats.Rdata")
 
 
 # Clean Common Player Info
@@ -65,7 +65,7 @@ common_data$POSITION <- sub("-.*", "", common_data$POSITION)
 rm(flag_cols, team_city_cols, draft_cols, height_split, feet, inches, cols_to_remove)
 
 # Save the cleaned data
-save(common_data, file = "data/processed_data/common_data.Rdata")
+save(common_data, file = "data/processed/common_data.Rdata")
 
 
 # Clean Salaries
@@ -77,7 +77,7 @@ names(salaries)[2] <- "SALARY"
 salaries$SEASON <- paste0(substr(salaries$SEASON, 1, 4), "-", substr(salaries$SEASON, 8, 9))
 
 # Save the cleaned data
-save(salaries, file = "data/processed_data/salaries.Rdata")
+save(salaries, file = "data/processed/salaries.Rdata")
 
 
 # Clean All-Star Data
@@ -103,7 +103,7 @@ all_star$PLAYER_NAME <- gsub("\\(C\\)|INJ|REP|ST|SPL|COVID|DNP|DND|\\d+$", "", a
 rm(start_years, years)
 
 # Save the cleaned data
-save(all_star, file = "data/processed_data/all_star.Rdata")
+save(all_star, file = "data/processed/all_star.Rdata")
 
 
 # Clean NCAA Data
@@ -129,7 +129,7 @@ ncaa_exp <- subset(ncaa_exp, !is.na(ncaa_exp$SEASON_EXP))
 rm(columns_to_select, draft_year, aux_data)
 
 # Save the cleaned data
-save(ncaa_exp, file = "data/processed_data/ncaa.Rdata")
+save(ncaa_exp, file = "data/processed/ncaa.Rdata")
 
 
 ##### DATA MERGING FOR STATISTICAL MODELS #####
@@ -191,5 +191,5 @@ nba_data <- nba_data %>%
   filter(SEASON_EXP > 0)
 
 # Save the final merged dataset
-save(nba_data, file = "data/processed_data/nba_data.Rdata")
+save(nba_data, file = "data/processed/nba_data.Rdata")
 
