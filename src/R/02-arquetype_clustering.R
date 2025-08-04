@@ -4,7 +4,7 @@ library(corrplot)
 library(RColorBrewer)
 
 # Create advanced variables
-stats <- stats %>%
+player_stats <- player_stats %>%
   mutate(
     # Shooting proportions
     FGA_per_MIN = FGA / MIN,
@@ -28,7 +28,7 @@ stats <- stats %>%
   )
 
 # Filter players with at least 15 min PER GAME
-filtered_stats <- stats %>%
+filtered_stats <- player_stats %>%
   filter(MIN >= 15)
 
 clustering_data <- filtered_stats[, c("FG_PCT", "FG3_PCT", "FT_PCT",
