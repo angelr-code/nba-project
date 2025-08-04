@@ -246,3 +246,11 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
+# renv 
+#   R package dependency management tool
+/renv/library/
+/renv/staging/
+/renv/cellar/
+/renv/
+.Rproj.user/
+.Ruserdata
