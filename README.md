@@ -24,7 +24,7 @@ The NBA, with its rich history of data analytics, serves as an ideal environment
 
 The analysis was performed using **Python** for data extraction and **R** for all data processing, modeling, and visualization.
 
-## 2. Key Findinds & Key Insights
+## 2. Methodology & Key Insights
 
 ### 💲 NBA Salary Prediction – Key Findings
 
@@ -70,7 +70,56 @@ Surprisingly, All-Star status had minimal weight, likely because performance sta
 
 ### 🏀 Player Archetypes – Key Findings
 
-    
+### ⭐ All-Star Prediction
+
+This section focuses on predicting NBA All-Star selections using a **Random Forest classifier**. Being named an All-Star is a prestigious achievement for players, and the ability to predict this can be valuable for betting platforms or brands seeking to sponsor rising stars.
+
+Despite clear performance differences between All-Star and non-All-Star players, this binary classification task is challenging due to:
+
+- **Class imbalance**: Far fewer All-Stars exist compared to non-All-Stars, which can bias models toward predicting the majority class.
+- **Temporal dependency**: Only 24 All-Stars are selected each season, so the year must be included as a feature.
+
+The model is trained using the `caret` R package with cross-validation to optimize hyperparameters. After extensive testing, a Random Forest with **250 trees** and **2 random variables per split** performed best. The **AUC (Area Under the Curve)** is used as the main evaluation metric due to the class imbalance.
+
+**Key results on the test set:**
+
+- **Accuracy**: 96.48%
+- **Precision (All-Star)**: 65%
+- **Recall (All-Star)**: 81.81%
+- **F1 Score**: 0.72
+
+These metrics show that the model effectively identifies most true All-Stars while maintaining a reasonable balance between false positives and false negatives. The default threshold of 0.5 yielded the best F1 score.
+
+### 🎓 Draft Success Prediction
+
+Each year, NBA franchises select top NCAA players through the **NBA Draft**. While some draftees go on to have long, successful careers, others struggle with the pressure and leave the league within just a few years.
+
+This section explores whether it's possible to **predict the long-term success** of a drafted player using only **college statistics**. Success is defined as playing more than **5 years** in the NBA. A predictive model like this could help teams identify hidden gems and build more data-driven draft strategies.
+
+The dataset includes about **1,500 drafted players** from 1980 to 2017, with some missing values—especially for older players. For this reason, the model is built using **XGBoost**, a powerful algorithm that can handle missing data and works well with small datasets.
+
+After selecting relevant variables and converting categorical features to numerical ones, hyperparameters are tuned using the `caret` package and cross-validation. Due to caret’s limitations with missing data, the final model is trained using the optimal parameters with the native `xgboost` package.
+
+**Results from the confusion matrix:**
+
+|                | Predicted: No Success | Predicted: Success |
+|----------------|-----------------------|---------------------|
+| **Actual: No Success** | 57                    | 38                  |
+| **Actual: Success**    | 47                    | 159                 |
+
+- **Accuracy**: 71.76%
+- **Precision (Success)**: 77.18%
+- **Recall (Success)**: 80.71%
+- **F1 Score**: 0.79
+
+The model performs reasonably well, especially considering that it relies solely on **pre-draft college data**. Notably, the **draft pick number** was not used as a feature to preserve the model’s usefulness in real scouting contexts. However, the **draft round** was included, as it’s typically projected before the draft takes place.
+
+The feature importance plot reveals that:
+- **Draft round** and **True Shooting %** are among the most predictive variables.
+- **Academic class** also plays a role in success prediction.
+- Interestingly, **player position** has little influence on the model’s decisions.
+
+
 
 ## 3. Technical Breakdown
 
